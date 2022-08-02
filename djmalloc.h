@@ -9,6 +9,7 @@
 #define djrealloc(o,n) djreallocInfo(o, n, (char*)__FILE__, __LINE__)
 #define djfree(x) djfreeInfo(x, (char*)__FILE__, __LINE__)
 #define djstrdup(x) djstrdupInfo(x, (char*)__FILE__, __LINE__)
+#define djstrndup(x, n) djstrndupInfo(x, n, (char*)__FILE__, __LINE__)
 #define djasprintf(x, ...) djasprintfInfo((char*)__FILE__, __LINE__, x, __VA_ARGS__)
 #define djcalloc(cnt, sz) djcallocInfo(cnt, sz, (char*)__FILE__, __LINE__);
 
@@ -16,6 +17,7 @@ void *djmallocInfo(size_t size, char *file, int line);
 void *djreallocInfo(void *old, size_t newsize, char *file, int line);
 void djfreeInfo(void *ptr, char *file, int line);
 char *djstrdupInfo(const char *s, char *file, int line);
+char *djstrndupInfo(const char *s, size_t n, char *file, int line);
 char *djasprintfInfo(const char *file, int line, const char *fmt, ...);
 void *djcallocInfo(size_t count, size_t size, char *file, int line);
 
@@ -25,6 +27,7 @@ void *djcallocInfo(size_t count, size_t size, char *file, int line);
 #define djrealloc(o,n) realloc(o, n)
 #define djfree(x) free(x)
 #define djstrdup(x) strdup(x)
+#define djstrndup(x) strndup(x)
 #define djasprintf(x, y, ...) asprintf(x, y, __VA_ARGS__)
 #define djcalloc(cnt, sz) calloc(cnt, sz)
 
@@ -168,6 +171,24 @@ djstrdupInfo(const char *s, char *file, int line)
 }
 
 char *
+djstrndupInfo(const char *s, size_t n, char *file, int line)
+{
+    assert(s);
+    unsigned int l = (unsigned int)strlen(s) + 1;
+    void *caller = __builtin_return_address(0);
+    if (l > 1024) {
+        printf("Suspicious strndup call: %d byes, from %p",
+               l, caller);
+    }
+
+    char *ret = strndup(s, n);
+    assert(ret);
+    djmalloc_trackAlloc(ret, l, caller, file, line);
+
+    return ret;
+}
+
+char *
 djasprintfInfo(const char *file, int line,
         const char *fmt, ...)
 {
@@ -287,6 +308,7 @@ void djmalloc_analyze(void)
 
 void *malloc(size_t)  __attribute__((deprecated("use djmalloc library - djmalloc")));
 char *strdup(const char *)  __attribute__((deprecated("use djmalloc library - djstrdup")));
+char *strndup(const char *, size_t)  __attribute__((deprecated("use djmalloc library - djstrndup")));
 
 void *calloc(size_t, size_t)  __attribute__((deprecated("use djmalloc library - djcalloc")));
 void *realloc(void *, size_t)  __attribute__((deprecated("use djmalloc library - djrealloc")));
