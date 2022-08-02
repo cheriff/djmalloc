@@ -271,6 +271,18 @@ djcallocInfo(size_t num, size_t count, char *file, int line)
     djmalloc_trackAlloc(ret, num*count, __builtin_return_address(0), file, line);
     return ret;
 }
+
+
+#else // DJMALLOC_NO_TRACKING
+size_t djheap_snapshot(void)
+{ return 0; }
+
+void djmalloc_analyze(void)
+{    printf("DJMalloc-Analyze not available with #DJMALLOC_NO_TRACKING defined\n"); }
+#endif // DJMALLOC_NO_TRACKING
+
+#endif // DJMALLOC_IMPLEMENTATION
+
 #if !defined(DJMALLOC_NO_POISON)
 
 void *malloc(size_t)  __attribute__((deprecated("use djmalloc library - djmalloc")));
@@ -282,17 +294,5 @@ int asprintf(char ** __restrict, const char * __restrict, ...)  __attribute__((d
 void free(void *)  __attribute__((deprecated("use djmalloc library - djfree")));
 
 #endif
-
-
-#else // DJMALLOC_NO_TRACKING
-size_t djheap_snapshot(void)
-{ return 0; }
-
-void djmalloc_analyze(void)
-{    printf("DJMalloc-Analyze not available with #DJMALLOC_NO_TRACKING defined\n"); }
-#endif // DJMALLOC_NO_TRACKING
-
-
-#endif // DJMALLOC_IMPLEMENTATION
 
 #endif // __DJMALLOC_H__
